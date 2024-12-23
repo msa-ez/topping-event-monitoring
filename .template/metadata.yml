@@ -1,7 +1,7 @@
-name: EDA Monitoring
+name: Event Monitoring
 rating: 5
 imageUrl: 
-description: EDA Monitoring
+description: It collects event logs from applications created based on the user's event-storming model to provide current event progress monitoring.
 tags:
   - Java
   - Spring boot
