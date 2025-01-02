@@ -8,6 +8,7 @@ package {{options.package}}.domain;
 
 import {{options.package}}.infra.AbstractEvent;
 import java.util.*;
+import javax.validation.constraints.*;
 import lombok.*;
 {{#checkBigDecimal fieldDescriptors}}{{/checkBigDecimal}}
 
@@ -16,6 +17,9 @@ import lombok.*;
 public class {{namePascalCase}} extends AbstractEvent {
 
     {{#fieldDescriptors}}
+    {{#if (or isCorrelationKey isSearchKey)}}
+    @NotNull
+    {{/if}}
     private {{{className}}} {{camelCase nameCamelCase}};
     {{/fieldDescriptors}}
 
