@@ -24,6 +24,8 @@ public class EventCollector {
     @Lob
     private String payload;
     private Long timestamp;
+    private String error;
+    
 {{#boundedContexts}}
 {{#each attached}}
 {{#if (isEvent _type name)}}
