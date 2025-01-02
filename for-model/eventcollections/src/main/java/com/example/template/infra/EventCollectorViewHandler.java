@@ -40,7 +40,7 @@ public class EventCollectorViewHandler {
     {{#if (isEvent _type name)}}
         {{#each fieldDescriptors}}
             {{#if isCorrelationKey}}
-            case "{{namePascalCase}}":
+            case "{{../namePascalCase}}":
                 return jsonNode.get("{{name}}").asText();
             {{/if}}
         {{/each}}
