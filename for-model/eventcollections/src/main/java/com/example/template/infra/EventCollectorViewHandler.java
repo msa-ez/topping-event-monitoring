@@ -36,16 +36,16 @@ public class EventCollectorViewHandler {
     private String getCorrelationKey(JsonNode jsonNode, String eventType) {
         switch (eventType) {
 {{#boundedContexts}}
-    {{#each attached}}
-        {{#if (isEvent _type name)}}
+{{#each attached}}
+    {{#if (isEvent _type name)}}
+        {{#each fieldDescriptors}}
+            {{#if isCorrelationKey}}
             case "{{namePascalCase}}":
-            {{#each fieldDescriptors}}
-                {{#if isCorrelationKey}}
-                    return jsonNode.get("{{name}}").asText();
-                {{/if}}
-            {{/each}}
-        {{/if}}
-    {{/each}}
+                return jsonNode.get("{{name}}").asText();
+            {{/if}}
+        {{/each}}
+    {{/if}}
+{{/each}}
 {{/boundedContexts}}
             default:
                 return "Unknown";
