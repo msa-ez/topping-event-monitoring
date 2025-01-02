@@ -4,10 +4,16 @@ package {{options.package}}.infra;
 
 import {{options.package}}.config.kafka.KafkaProcessor;
 import {{options.package}}.domain.*;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
+
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+import javax.validation.ConstraintViolation;
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.annotation.StreamListener;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -20,44 +26,140 @@ public class EventCollectorViewHandler {
     @Autowired
     private EventCollectorRepository eventCollectorRepository;
 
+    private final Validator validator;
+
+    public EventCollectorViewHandler() {
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        this.validator = factory.getValidator();
+    }
+
+    private String getCorrelationKey(JsonNode jsonNode, String eventType) {
+        switch (eventType) {
 {{#boundedContexts}}
     {{#each attached}}
-    {{#if (isEvent _type name)}}
-    @StreamListener(KafkaProcessor.INPUT)
-    public void when{{namePascalCase}}_then_CREATE(
-        @Payload {{namePascalCase}} {{nameCamelCase}}
-    ) {
-        try {
-            if (!{{nameCamelCase}}.validate()) return;
+        {{#if (isEvent _type name)}}
+            case "{{namePascalCase}}":
+            {{#each fieldDescriptors}}
+                {{#if isCorrelationKey}}
+                    return jsonNode.get("{{name}}").asText();
+                {{/if}}
+            {{/each}}
+        {{/if}}
+    {{/each}}
+{{/boundedContexts}}
+            default:
+                return "Unknown";
+        }
+    }
 
-            // view 객체 생성
-            EventCollector eventCollector = new EventCollector();
-            // view 객체에 이벤트의 Value 를 set 함
-            eventCollector.setType({{nameCamelCase}}.getEventType());
-            eventCollector.setCorrelationKey(
-                {{#checkCorrelationKey nameCamelCase fieldDescriptors}}{{/checkCorrelationKey}}
-            );
+    @StreamListener(KafkaProcessor.INPUT)
+    public void onEventReceived(@Payload String rawPayload) {
+        try {
+            // _type 속성 파싱하여 대상 클래스 타입 결정
+            ObjectMapper typeMapper = new ObjectMapper();
+            JsonNode jsonNode = typeMapper.readTree(rawPayload);
+
+            // _type 속성 추출
+            String type = jsonNode.get("eventType").asText();
+
+            // 대상 클래스 동적 로드
+            Class<?> eventClass = Class.forName("{{options.package}}.domain." + type);
+
+            // 페이로드를 대상 클래스에 역직렬화
             ObjectMapper objectMapper = new ObjectMapper();
-            String jsonPayload = objectMapper.writeValueAsString({{nameCamelCase}});
-            eventCollector.setPayload(jsonPayload);
-            eventCollector.setTimestamp({{nameCamelCase}}.getTimestamp());
-            {{#setSearchKey nameCamelCase fieldDescriptors}}{{/setSearchKey}}
-            // view 레파지 토리에 save
-            eventCollectorRepository.save(eventCollector);
+            Object event = objectMapper.readValue(rawPayload, eventClass);
+
+            // 이벤트 검증
+            Set<ConstraintViolation<Object>> violations = validator.validate(event);
+            if (violations.isEmpty()) {
+                EventCollector eventCollector = new EventCollector();
+                eventCollector.setType(type);
+                eventCollector.setCorrelationKey(getCorrelationKey(jsonNode, type));
+                eventCollector.setPayload(rawPayload);
+                eventCollector.setTimestamp(jsonNode.get("timestamp").asLong());
+{{#boundedContexts}}
+    {{#each attached}}
+        {{#if (isEvent _type name)}}
+            {{#each fieldDescriptors}}
+                {{#if isSearchKey}}
+                eventCollector.set{{namePascalCase}}("Unknown");
+                {{/if}}
+            {{/each}}
+        {{/if}}
+    {{/each}}
+{{/boundedContexts}}
+
+                // 유효한 이벤트 저장
+                eventCollectorRepository.save(eventCollector);
+            } else {
+                throw new Exception("Invalid event: " + violations);
+            }
         } catch (Exception e) {
+            try {
+                // 필드 검증 비활성화 후 재파싱 시도
+                ObjectMapper relaxedMapper = new ObjectMapper();
+                relaxedMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+                // 다시 파싱하여 가능한 데이터 추출
+                JsonNode jsonNode = new ObjectMapper().readTree(rawPayload);
+                String type = jsonNode.get("eventType").asText();
+
+                // 부분 데이터로 EventCollector 생성
+                EventCollector eventCollector = new EventCollector();
+                eventCollector.setType(type);
+                eventCollector.setPayload(rawPayload);
+                eventCollector.setCorrelationKey(getCorrelationKey(jsonNode, type));
+                eventCollector.setTimestamp(jsonNode.has("timestamp") ? jsonNode.get("timestamp").asLong() : System.currentTimeMillis());
+                eventCollector.setError(e.getMessage());
+{{#boundedContexts}}
+    {{#each attached}}
+        {{#if (isEvent _type name)}}
+            {{#each fieldDescriptors}}
+                {{#if isSearchKey}}
+                eventCollector.set{{namePascalCase}}("Unknown");
+                {{/if}}
+            {{/each}}
+        {{/if}}
+    {{/each}}
+{{/boundedContexts}}
+
+                // 부분 데이터 저장
+                eventCollectorRepository.save(eventCollector);
+            } catch (Exception innerException) {
+                // 재파싱도 실패한 경우 처리
+                EventCollector eventCollector = new EventCollector();
+                eventCollector.setType("UnknownType");
+                eventCollector.setPayload(rawPayload);
+                eventCollector.setCorrelationKey("Unknown");
+                eventCollector.setTimestamp(System.currentTimeMillis());
+                eventCollector.setError(innerException.getMessage());
+{{#boundedContexts}}
+    {{#each attached}}
+        {{#if (isEvent _type name)}}
+            {{#each fieldDescriptors}}
+                {{#if isSearchKey}}
+                eventCollector.set{{namePascalCase}}("Unknown");
+                {{/if}}
+            {{/each}}
+        {{/if}}
+    {{/each}}
+{{/boundedContexts}}
+
+                // 최종 데이터 저장
+                eventCollectorRepository.save(eventCollector);
+
+                innerException.printStackTrace();
+            }
+
+            // 원래 예외 로그 기록
             e.printStackTrace();
         }
     }
-    {{/if}}
-    {{/each}}
-{{/boundedContexts}}
     //>>> DDD / CQRS
 }
 
 <function>
 var eventList = [];
-var searchKeyList = [];
-
 
 window.$HandleBars.registerHelper('isEvent', function (type, name) {
     if (type.endsWith("Event") && !eventList.includes(name)) {
@@ -66,32 +168,5 @@ window.$HandleBars.registerHelper('isEvent', function (type, name) {
     } else {
         return false;
     }
-});
-
-window.$HandleBars.registerHelper('checkCorrelationKey', function (eventName, fieldDescriptors) {
-    var text = "";
-    for(var i = 0; i < fieldDescriptors.length; i ++ ){
-        if(fieldDescriptors[i] && fieldDescriptors[i].isCorrelationKey) {
-            const value = eventName + ".get" + fieldDescriptors[i].namePascalCase + "()";
-            if (fieldDescriptors[i].className == "String") {
-                text += value;
-            } else {
-                text += "String.valueOf(" + value + ")"
-            }
-            return text;
-        }
-    }
-});
-
-window.$HandleBars.registerHelper('setSearchKey', function (eventName, fieldDescriptors) {
-    var text = "";
-    for(var i = 0; i < fieldDescriptors.length; i ++ ) {
-        if(fieldDescriptors[i] && fieldDescriptors[i].isSearchKey && !searchKeyList.includes(fieldDescriptors[i].name)) {
-            searchKeyList.push(fieldDescriptors[i].name);
-            const value = eventName + ".get" + fieldDescriptors[i].namePascalCase + "()";
-            text += "eventCollector.set" + fieldDescriptors[i].namePascalCase + "(" + value + ");"
-        }
-    }
-    return text;
 });
 </function>
