@@ -19,13 +19,17 @@ public class EventCollector {
     private Long id;
 
     private String type;
+
     private String correlationKey;
     
     @Lob
     private String payload;
-    private Long timestamp;
-    private String error;
     
+    private Long timestamp;
+    
+    @Lob
+    private String error;
+
 {{#boundedContexts}}
 {{#each attached}}
 {{#if (isEvent _type name)}}

@@ -37,14 +37,18 @@ public class EventCollectorViewHandler {
         switch (eventType) {
 {{#boundedContexts}}
 {{#each attached}}
-    {{#if (isEvent _type name)}}
-        {{#each fieldDescriptors}}
-            {{#if isCorrelationKey}}
+{{#if (isEvent _type name)}}
+    {{#each fieldDescriptors}}
+        {{#if isCorrelationKey}}
             case "{{../namePascalCase}}":
+            {{#if (checkPrimitiveType className)}}
                 return jsonNode.get("{{name}}").asText();
+            {{else}}
+                {{#parseCorrelationKey className ../../../attached}}{{/parseCorrelationKey}}
             {{/if}}
-        {{/each}}
-    {{/if}}
+        {{/if}}
+    {{/each}}
+{{/if}}
 {{/each}}
 {{/boundedContexts}}
             default:
@@ -168,5 +172,31 @@ window.$HandleBars.registerHelper('isEvent', function (type, name) {
     } else {
         return false;
     }
+});
+
+window.$HandleBars.registerHelper('checkPrimitiveType', function (type) {
+    var primitiveTypes = ["String", "Integer", "Long", "Double", "Float", "Boolean", "Date", "BigDecimal"];
+    if (primitiveTypes.includes(type)) {
+        return true;
+    } else {
+        return false;
+    }
+});
+
+window.$HandleBars.registerHelper('parseCorrelationKey', function (className, attached) {
+    var text = "";
+    if (attached.length > 0) {
+        for (var i = 0; i < attached.length; i++) {
+            if (attached[i] && attached[i].name && attached[i].name === className) {
+                if (attached[i].isVO) {
+                    var vo = attached[i];
+                    if (vo.fieldDescriptors && vo.fieldDescriptors.length > 0) {
+                        text = "return jsonNode.get(" + className + ").get(" + vo.fieldDescriptors[0].name + ").asText();";
+                    }
+                }
+            }
+        }
+    }
+    return text;
 });
 </function>
