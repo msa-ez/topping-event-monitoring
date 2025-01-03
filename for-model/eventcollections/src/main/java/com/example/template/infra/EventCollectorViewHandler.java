@@ -44,7 +44,7 @@ public class EventCollectorViewHandler {
             {{#if (checkPrimitiveType className)}}
                 return jsonNode.get("{{name}}").asText();
             {{else}}
-                {{#parseCorrelationKey className ../../../attached}}{{/parseCorrelationKey}}
+                {{#parseCorrelationKey className ../../attached}}{{/parseCorrelationKey}}
             {{/if}}
         {{/if}}
     {{/each}}
@@ -191,7 +191,8 @@ window.$HandleBars.registerHelper('parseCorrelationKey', function (className, at
                 if (attached[i].isVO) {
                     var vo = attached[i];
                     if (vo.fieldDescriptors && vo.fieldDescriptors.length > 0) {
-                        text = "return jsonNode.get(" + className + ").get(" + vo.fieldDescriptors[0].name + ").asText();";
+                        text = 'return jsonNode.get("' + vo.nameCamelCase + '").get("' 
+                            + vo.fieldDescriptors[0].name + '").asText();';
                     }
                 }
             }
