@@ -1,36 +1,47 @@
-### Event Monitoring
+### 이벤트 모니터링
 
-#### Faster Problem Resolution: Quickly trace and diagnose failures at specific stages in complex business processes, enabling real-time problem-solving.
+#### 시스템 가시성 향상: 상관관계 키를 통해 관련 이벤트를 시각화하여 대규모 시스템의 워크플로우를 쉽게 이해하고 관리할 수 있습니다.
 
-#### Improved System Visibility: Easily understand and manage workflows in large-scale systems by visualizing related events through the Correlation Key.
+#### 효율적인 이벤트 관리: 최근 발생된 이벤트들을 실시간으로 모니터링 하여 시스템 상태에 대한 신속한 대응이 가능하도록 합니다. 또한 상관관계 키와 검색 키를 통해 검색된 내용을 바탕으로 이벤트 흐름과 진행 상태를 직관적으로 확인하여 운영 효율성을 향상시킵니다.
 
-#### Validation of Design and Implementation Consistency: Effortlessly verify whether newly developed features or system modifications align with the designed event-storming model.
+#### 빠른 문제 해결: 복잡한 비즈니스 프로세스의 특정 단계에서 발생하는 실패를 신속하게 추적하고 진단하여 실시간으로 문제를 해결할 수 있습니다.
 
-#### Efficient Event Management: Intuitively check event types, timestamps, and detailed information from filtered event lists, enhancing operational efficiency.
+#### 팀 협업 강화: 이벤트 흐름에 대한 명확한 가시성을 제공하여 개발 및 비즈니스 팀 간의 원활한 의사소통과 협업을 촉진합니다.
 
-#### Ensured Compliance with Business Requirements: Visualize progress to confirm that business requirements are being properly implemented.
+### 실행 방법
 
-#### Enhanced Team Collaboration: Facilitate smooth communication and collaboration between development and business teams by providing clear visibility into event flows
+#### 상관관계 키 및 검색 키 설정: Event Panel 의 속성 편집에서 상관관계 키 및 검색 키로 사용할 속성을 설정합니다.
 
-
-### How To Run
-
-#### Correlation Key and Search Key Settings
-
-##### In Edit Attributes in the Event Panel, set the attributes to be used as a Correlation Key and a Search Key.
-
-###### Correlation Key: A unique identification number that connects different activities that occur in a single business process.
+###### 상관관계 키: 단일 비즈니스 프로세스에서 발생하는 다양한 활동을 연결하는 고유 식별 번호입니다.
 ![image](https://github.com/user-attachments/assets/041d1fcd-bc5a-4e45-9bcf-1715b4a1362a)
-###### Search Key: Key used for event filtering searches with correlation keys.
+###### 검색 키: 상관관계 키와 함께 이벤트 필터링 검색 시 사용되는 키입니다.
 ![image](https://github.com/user-attachments/assets/c88a79dc-d6ae-4265-92c8-03843d899c7b)
 
-#### Run EventCollections
+#### Event Collections 실행
 ```
 cd eventcollections
 mvn spring-boot:run
 ```
-Make sure it runs with port number 9999.
+localhost 에서 실행되어야 합니다. 포트 번호 9999로 실행되는지 확인하세요. (http://localhost:9999)
 
 
-### Example Video
-[Food Delivery Service](https://www.youtube.com/watch?v=Y3Si5eMNgTM)
+### 모니터링 화면
+
+#### 최근 이벤트들: 현재 시간 기준으로 최근 5분 이내에 발생한 이벤트 목록을 확인할 수 있습니다.
+![image](https://github.com/user-attachments/assets/5ae78b6f-5f03-42b5-a21a-5563e37a2ef8)
+
+
+#### 필터링 이벤트들: 이벤트 속성에서 설정한 상관관계 키와 검색 키를 이용하여 필터링된 이벤트 목록을 확인할 수 있습니다.
+![image](https://github.com/user-attachments/assets/c7b80b32-0949-4fd6-94b6-24d8712092e1)
+
+
+#### 이벤트 상세 화면: 이벤트 목록에서 데이터를 클릭 시 해당 이벤트의 상세 내용을 확인할 수 있습니다.
+![image](https://github.com/user-attachments/assets/779710e6-eaf8-4565-a843-c608173c7cee)
+
+
+#### 이벤트 진행상황: 필터링된 이벤트 목록에서 특정 이벤트를 클릭 시 전체 이벤트들의 흐름 순서와 해당 이벤트의 진행 상황을 이벤트스토밍 도면에서 확인할 수 있습니다.
+![image](https://github.com/user-attachments/assets/b76e109a-2610-4966-8f25-1c3a9fc65bf1)
+
+
+### 예제 비디오
+[음식 배달 서비스](https://www.youtube.com/watch?v=Y3Si5eMNgTM)
