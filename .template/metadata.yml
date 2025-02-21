@@ -1,6 +1,6 @@
 name: Event Monitoring
 rating: 5
-imageUrl: 
+imageUrl: https://github.com/user-attachments/assets/42393329-d22a-49aa-bdb6-4866505fdf54
 description: It collects event logs from applications created based on the user's event-storming model to provide current event progress monitoring.
 tags:
   - Java
